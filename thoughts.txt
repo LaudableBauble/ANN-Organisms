@@ -1,0 +1,15 @@
+Use both physical attributes and a neural network.
+
+Use a recurrent neural network with reinforcement learning.
+Every node has a memory of previously given values and at each timestep it is polled for activation, which then is sent through each connection.
+
+Put evolutionary pressure on weights, number of hidden neurons and the number of connections.
+
+Inputs:
+	
+	Sight - Pixel data for a certain number of pixels (raycasting?)
+	Energy - Simple counter
+	
+Output:
+
+	Thrust - Right and left side
