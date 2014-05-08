@@ -1,58 +1,53 @@
-function Brain()
+function Brain(org)
 {
 	var self = this;
+	self.organism = org;
 	self.nodes = [];
 	self.inputNodes = [];
 	self.outputNodes = [];
 	self.maxTick = 10;
-	self.b = true;
 	
-	self.setOutputNode = function(n, c)
+	self.setOutputNode = function(nme, nde, clbk)
 	{
-		var on = { node: n, callback: c }
+		var on = { name: nme, node: nde, callback: clbk }
 		self.outputNodes.push(on);
 	}
 	self.update = function()
 	{
+		if (self.organism.id == 0)
+		{
+			var a = self.outputNodes[0].node.getValue();
+			var b = self.outputNodes[1].node.getValue();
+			
+			if (a == 0 || b == 0)
+			{
+				var c = 0;
+			}
+		}
+	
 		var signalsToSend = [];
-		var nextBatch = [];
-		var tick = 0;
 		
-		//Activate the input nodes.
-		for (var i in self.inputNodes)
+		//Get all signals to send.
+		for (var i in self.nodes)
 		{
-			signalsToSend.push.apply(signalsToSend, self.inputNodes[i].createSignals());
+			signalsToSend.push.apply(signalsToSend, self.nodes[i].createSignals());
 		}
-		
-		//While there are signals left to send and not enough time has progressed.
-		while (signalsToSend.length > 0 && tick <= self.maxTick)
-		{
-			for (var s in signalsToSend)
-			{
-				nextBatch.push.apply(nextBatch, signalsToSend[s].send(self.b));
-			}
-			
-			signalsToSend = [];
-			for (var i in nextBatch)
-			{
-			    signalsToSend[i] = nextBatch[i];
-			}
-			nextBatch = [];
-			
-			tick++;
-		}
-		
-		self.b = false;
 		
 		//Send the output data back.
 		for (var i in self.outputNodes)
 		{
 			self.outputNodes[i].callback(self.outputNodes[i].node.getValue());
 		}
+		
+		//Send all signals forward one step.
+		for (var i in signalsToSend)
+		{
+			signalsToSend[i].send();
+		}
 	}
-	self.clone = function(mutate)
+	self.clone = function(org, mutate)
 	{	
-		var brain = new Brain();
+		var brain = new Brain(org);
 		brain.maxTick = self.maxTick;
 		
 		//Create the nodes.
@@ -66,21 +61,22 @@ function Brain()
 		}	
 		for (var i in self.outputNodes)
 		{
-			if (typeof self.outputNodes[i].node == 'undefined')
+			var callback = {};
+			switch (self.outputNodes[i].name)
 			{
-				var a = 0;
+				case "thrustR" : { callback = org.setRightThrust; break; }
+				case "thrustL" : { callback = org.setLeftThrust; break; }
 			}
-			
-			brain.setOutputNode(brain.nodes[self.outputNodes[i].node.id], self.outputNodes[i].callback);
+			brain.setOutputNode(self.outputNodes[i].name, brain.nodes[self.outputNodes[i].node.id], callback);
 		}
 		
 		//Setup each node's connections.
 		for (var n in brain.nodes)
 		{
-			for (var c in brain.nodes[n].connections)
+			for (var c in self.nodes[n].connections)
 			{
 				var conn = self.nodes[n].connections[c];
-				brain.nodes[n].addConnection(brain.nodes[conn.target.id], conn.weight * getRandomInt(-1, 1) * mutate);
+				brain.nodes[n].addConnection(brain.nodes[conn.target.id], conn.weight + randomInt(-1, 1) * mutate);
 			}
 		}
 		
@@ -160,7 +156,7 @@ function Signal(value, sourceNode, targetNode)
 	self.sourceNode = sourceNode;
 	self.targetNode = targetNode;
 	
-	self.send = function(b)
+	self.send = function()
 	{
 		//if (b) { console.log("Node #" + self.targetNode.id + " was sent a signal!"); }
 		self.targetNode.recieveSignal(self.value, self.sourceNode);

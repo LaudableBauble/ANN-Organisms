@@ -18,6 +18,7 @@ function getRandomizedOrganism()
 	org.speed = 10 / 10.0;
 	org.dir.x = randomInt(-1, 1);
 	org.dir.y = randomInt(-1, 1);
+	org.energy = 1000;
 	
 	return org;
 }
@@ -73,16 +74,17 @@ function Organism(id)
 		self.thrustPosL = new b2Vec2(self.x + + self.dir.y * self.r * .5, self.y - self.dir.x * self.r * .5);
 		
 		//Change the thrust color.
-		var r = Math.round(204 - Math.max(self.energy * 1.5, 0));
-		var g = Math.round(51 + Math.max(self.energy * 2, 0));
-		var b = Math.round(51 + Math.max(self.energy * 0.5, 0));
+		var r = Math.min(Math.round(204 - Math.max(self.energy * .2, 0)), 255);
+		var g = Math.min(Math.round(51 + Math.max(self.energy * .2, 0)), 255);
+		var b = Math.min(Math.round(51 + Math.max(self.energy * .05, 0)), 255);
 		self.thrustColor = 'rgb(' + r + ', ' + g + ', ' + b + ')';
 		
 		self.move();
 		
 		self.eye.update(self.body.GetWorldCenter(), self.dir);
 		var fraction = self.eye.raycast.fraction ? self.eye.raycast.fraction : 1;
-		self.brain.inputNodes[0].recieveSignal(fraction, "input");
+		self.brain.inputNodes[0].recieveSignal(fraction, "sight");
+		self.brain.inputNodes[1].recieveSignal(self.energy, "energy");
 		self.brain.update();
 	}
 	self.draw = function()
@@ -108,7 +110,7 @@ function Organism(id)
 		//Draw debug text.
 		ctx.font = "8px Arial";
 		ctx.fillStyle = "#FF0000";
-		ctx.fillText("#" + self.id + "     " + self.energy, self.x - self.r, self.y - self.r - 3);
+		ctx.fillText("#" + self.id + "     " + round(self.energy, 0), self.x - self.r, self.y - self.r - 3);
 	}
 
 	self.move = function()
@@ -119,14 +121,11 @@ function Organism(id)
 		{
 			self.body.ApplyForce(self.thrustR, new b2Vec2(self.thrustPosR.x / PixelsPerMeter, self.thrustPosR.y / PixelsPerMeter));
 			self.body.ApplyForce(self.thrustL, new b2Vec2(self.thrustPosL.x / PixelsPerMeter, self.thrustPosL.y / PixelsPerMeter));
+			self.energy = Math.max(self.energy - 25 * (Math.abs(self.thrustR.x) + Math.abs(self.thrustR.y) + Math.abs(self.thrustL.x) + Math.abs(self.thrustL.y)) / 4, 0);
 		}
 	}
 	self.setRightThrust = function(value)
 	{
-		if (self.id == 0)
-		{
-			var a = 0;
-		}
 		value /= 10;
 		self.thrustR = new b2Vec2(self.dir.x * value, self.dir.y * value);
 	}
@@ -176,8 +175,8 @@ function Eye(length)
 		//Get the pixel data at the raycast intersection point.
 		if (self.raycast.point.x != -1)
 		{
-			var imgd = ctx.getImageData(self.sight.x, self.sight.y, 5, 5);
-			var pix = imgd.data;
+			//var imgd = ctx.getImageData(self.sight.x, self.sight.y, 5, 5);
+			//var pix = imgd.data;
 		}
 	}
 	self.draw = function()

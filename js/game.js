@@ -76,27 +76,10 @@ function setup()
 	bodyDef.position.Set(1420 / PixelsPerMeter, 0 / PixelsPerMeter);
 	world.CreateBody(bodyDef).CreateFixture(fixDef);
 
-	items[0] = getRandomizedOrganism();
-	items[1] = getRandomizedOrganism();
-	items[2] = getRandomizedOrganism();
-	items[3] = getRandomizedOrganism();
-	items[4] = getRandomizedOrganism();
-	items[5] = getRandomizedOrganism();
-	items[6] = getRandomizedOrganism();
-	items[7] = getRandomizedOrganism();
-	items[8] = getRandomizedOrganism();
-	items[9] = getRandomizedOrganism();
-	items[10] = getRandomizedOrganism();
-	items[11] = getRandomizedOrganism();
-	items[12] = getRandomizedOrganism();
-	items[13] = getRandomizedOrganism();
-	items[14] = getRandomizedOrganism();
-	items[15] = getRandomizedOrganism();
-	items[16] = getRandomizedOrganism();
-	items[17] = getRandomizedOrganism();
-	items[18] = getRandomizedOrganism();
-	items[19] = getRandomizedOrganism();
-	items[20] = getRandomizedOrganism();
+	for (var i = 0; i < 40; i++)
+	{
+		items[i] = getRandomizedOrganism();
+	}
 	
 	//Initialize all items.
 	for (var i = 0; i < items.length; i++)
@@ -127,9 +110,9 @@ function gameLoop()
 	ctx.fillRect(0,0,1400,800);
 	
 	//Alter the graviy.
-	if (tick >= 0 && tick < 100) { world.SetGravity(new b2Vec2(0, .1)); }
+	/*if (tick >= 0 && tick < 100) { world.SetGravity(new b2Vec2(0, .1)); }
 	else if (tick >= 500 && tick < 600) { world.SetGravity(new b2Vec2(0, -.1)); }
-	else { world.SetGravity(new b2Vec2(0, 0)); }
+	else { world.SetGravity(new b2Vec2(0, 0)); }*/
 
 	//Update the world.
 	var timeStep = 1.0/60;
@@ -143,7 +126,7 @@ function gameLoop()
 		items[i].update();
 		items[i].draw();
 		
-		if (inContact[i]) { items[i].energy -= 1; }
+		if (inContact[i]) { items[i].energy = Math.max(items[i].energy - 5, 0); }
 	}
 	
 	//Evolution.
@@ -152,10 +135,10 @@ function gameLoop()
 		fittest = getFittestOrganism();
 		for (var i in items)
 		{
-			items[i].brain = fittest.brain.clone(.1);
-			items[i].energy = 100;
+			items[i].brain = fittest.brain.clone(items[i], .1);
+			items[i].energy = 1000;
 		}
-		getRandomizedBrain(items[0]);
+		items[items.length - 1].brain = fittest.brain.clone(items[items.length - 1], .8);
 		
 		tick = 0;
 		generations++;
@@ -171,7 +154,7 @@ function gameLoop()
 	ctx.fillText("Tick: " + tick, 10, 40);
 	for (var i in items)
 	{
-		ctx.fillText("#" + i + " - Energy: " + items[i].energy, 10, 60 + 15 * i);
+		ctx.fillText("#" + i + " - Energy: " + round(items[i].energy, 0), 10, 60 + 15 * i);
 	}
 	ctx.fillText("Ancestor: #" + fittest.id, 10, 60 + 15 * items.length + 20);
 	
@@ -208,31 +191,34 @@ function round(number, decimals)
 function getRandomizedBrain(org)
 {
 	//The brain.
-	var brain = new Brain();
-	for (var i = 0; i < 7; i++)
+	var brain = new Brain(org);
+	for (var i = 0; i < 8; i++)
 	{
 		brain.nodes.push(new Node(i));
 	}
 	
 	brain.inputNodes.push(brain.nodes[0]);
-	brain.setOutputNode(brain.nodes[5], org.setRightThrust);
-	brain.setOutputNode(brain.nodes[6], org.setLeftThrust);
+	brain.inputNodes.push(brain.nodes[1]);
+	brain.setOutputNode("thrustR", brain.nodes[6], org.setRightThrust);
+	brain.setOutputNode("thrustL", brain.nodes[7], org.setLeftThrust);
 	
 	//Input.
-	brain.nodes[0].addConnection(brain.nodes[1], randomInt(-10, 10) / 10);
 	brain.nodes[0].addConnection(brain.nodes[2], randomInt(-10, 10) / 10);
+	brain.nodes[0].addConnection(brain.nodes[3], randomInt(-10, 10) / 10);
+	brain.nodes[1].addConnection(brain.nodes[2], randomInt(-10, 10) / 10);
+	brain.nodes[1].addConnection(brain.nodes[3], randomInt(-10, 10) / 10);
 	
 	//First hidden layer.
-	brain.nodes[1].addConnection(brain.nodes[3], randomInt(-10, 10) / 10);
-	brain.nodes[1].addConnection(brain.nodes[4], randomInt(-10, 10) / 10);
-	brain.nodes[2].addConnection(brain.nodes[3], randomInt(-10, 10) / 10);
 	brain.nodes[2].addConnection(brain.nodes[4], randomInt(-10, 10) / 10);
+	brain.nodes[2].addConnection(brain.nodes[5], randomInt(-10, 10) / 10);
+	brain.nodes[3].addConnection(brain.nodes[4], randomInt(-10, 10) / 10);
+	brain.nodes[3].addConnection(brain.nodes[5], randomInt(-10, 10) / 10);
 	
 	//Second hidden layer.
-	brain.nodes[3].addConnection(brain.nodes[5], randomInt(-10, 10) / 10);
 	brain.nodes[4].addConnection(brain.nodes[6], randomInt(-10, 10) / 10);
-	brain.nodes[3].addConnection(brain.nodes[5], randomInt(-10, 10) / 10);
-	brain.nodes[4].addConnection(brain.nodes[6], randomInt(-10, 10) / 10);
+	brain.nodes[4].addConnection(brain.nodes[7], randomInt(-10, 10) / 10);
+	brain.nodes[5].addConnection(brain.nodes[6], randomInt(-10, 10) / 10);
+	brain.nodes[5].addConnection(brain.nodes[7], randomInt(-10, 10) / 10);
 	
 	org.brain = brain;
 }
