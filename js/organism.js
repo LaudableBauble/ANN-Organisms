@@ -40,6 +40,8 @@ function Organism(id)
 	self.thrustR = new b2Vec2(0, 0);
 	self.thrustL = new b2Vec2(0, 0);
 	self.energy = 100;
+	self.timesCopied = 0;
+	self.timeBorn = new Date().getTime();
 	
 	self.initialize = function()
 	{
@@ -66,7 +68,7 @@ function Organism(id)
 		getRandomizedBrain(self);
 	}
 	self.update = function()
-	{		
+	{	
 		self.dir = angleToDirection(self.body.GetAngle() + Math.PI / 2);
 		self.x = self.body.GetWorldCenter().x * PixelsPerMeter;
 		self.y = self.body.GetWorldCenter().y * PixelsPerMeter;
@@ -81,10 +83,24 @@ function Organism(id)
 		
 		self.move();
 		
+		if (isNaN(self.body.GetAngularVelocity()) || isNaN(self.body.GetAngle()) || isNaN(self.body.GetLinearVelocity().x) ||
+		isNaN(self.body.GetLinearVelocity().y))
+		{
+			var a = self.body.GetAngularVelocity();
+			var b = self.body.GetAngle();
+			var c = self.body.GetLinearVelocity().x;
+			var d = self.body.GetLinearVelocity().y;
+			var e = 0;
+		}
+		
 		self.eye.update(self.body.GetWorldCenter(), self.dir);
 		var fraction = self.eye.raycast.fraction ? self.eye.raycast.fraction : 1;
 		self.brain.inputNodes[0].recieveSignal(fraction, "sight");
 		self.brain.inputNodes[1].recieveSignal(self.energy, "energy");
+		self.brain.inputNodes[2].recieveSignal(self.body.GetAngularVelocity(), "rotVel");
+		self.brain.inputNodes[3].recieveSignal(self.body.GetAngle() / 1000, "dir");
+		self.brain.inputNodes[4].recieveSignal(self.body.GetLinearVelocity().x, "linVelX");
+		self.brain.inputNodes[5].recieveSignal(self.body.GetLinearVelocity().y, "linVelY");
 		self.brain.update();
 	}
 	self.draw = function()
@@ -121,7 +137,14 @@ function Organism(id)
 		{
 			self.body.ApplyForce(self.thrustR, new b2Vec2(self.thrustPosR.x / PixelsPerMeter, self.thrustPosR.y / PixelsPerMeter));
 			self.body.ApplyForce(self.thrustL, new b2Vec2(self.thrustPosL.x / PixelsPerMeter, self.thrustPosL.y / PixelsPerMeter));
-			self.energy = Math.max(self.energy - 25 * (Math.abs(self.thrustR.x) + Math.abs(self.thrustR.y) + Math.abs(self.thrustL.x) + Math.abs(self.thrustL.y)) / 4, 0);
+			var thrustE = 25 * (Math.abs(self.thrustR.x) + Math.abs(self.thrustR.y) + Math.abs(self.thrustL.x) + Math.abs(self.thrustL.y)) / 4;
+			var rotE = Math.abs(self.body.GetAngularVelocity()) / 100;
+			if (isNaN(thrustE) || isNaN(rotE) || isNaN(self.body.GetLinearVelocity().x) ||
+				isNaN(self.body.GetLinearVelocity().y))
+			{
+				var a = 0;
+			}
+			self.energy = Math.max(self.energy - thrustE - rotE, 0);
 		}
 	}
 	self.setRightThrust = function(value)
@@ -144,6 +167,13 @@ function Organism(id)
 		org.initialize();
 		
 		org.brain = self.brain.clone();
+	}
+	self.reset = function()
+	{
+		self.energy = 1000;
+		self.body.SetAngularVelocity(0);
+		self.timesCopied = 0;
+		self.timeBorn = new Date().getTime();
 	}
 }
 

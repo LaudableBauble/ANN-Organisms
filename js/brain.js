@@ -14,17 +14,6 @@ function Brain(org)
 	}
 	self.update = function()
 	{
-		if (self.organism.id == 0)
-		{
-			var a = self.outputNodes[0].node.getValue();
-			var b = self.outputNodes[1].node.getValue();
-			
-			if (a == 0 || b == 0)
-			{
-				var c = 0;
-			}
-		}
-	
 		var signalsToSend = [];
 		
 		//Get all signals to send.
@@ -99,6 +88,8 @@ function Node(id)
 	}
 	self.recieveSignal = function(val, sourceNode)
 	{
+		if (isNaN(val)) { throw "Value is not a number!"; }
+	
 		var v = { value: val, source: sourceNode }
 		self.values["Node" + sourceNode.id] = v;
 	}
@@ -119,7 +110,8 @@ function Node(id)
 	self.getValue = function()
 	{
 		var value = self.combinationFunction();
-		value = self.activationFunction(value);		
+		value = self.activationFunction(value);
+		if (isNaN(value)) { throw "Value is not a number!"; }
 		return value;
 	}
 	self.combinationFunction = function()
