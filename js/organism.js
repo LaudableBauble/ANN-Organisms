@@ -19,6 +19,7 @@ function getRandomizedOrganism()
 	org.dir.x = randomInt(-1, 1);
 	org.dir.y = randomInt(-1, 1);
 	org.energy = 1000;
+	org.color = "4e6183";
 	
 	return org;
 }
@@ -79,19 +80,22 @@ function Organism(id)
 		var r = Math.min(Math.round(204 - Math.max(self.energy * .2, 0)), 255);
 		var g = Math.min(Math.round(51 + Math.max(self.energy * .2, 0)), 255);
 		var b = Math.min(Math.round(51 + Math.max(self.energy * .05, 0)), 255);
-		self.thrustColor = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+		self.healthColor = 'rgb(' + r + ', ' + g + ', ' + b + ')';
 		
 		self.move();
 		
-		if (isNaN(self.body.GetAngularVelocity()) || isNaN(self.body.GetAngle()) || isNaN(self.body.GetLinearVelocity().x) ||
-		isNaN(self.body.GetLinearVelocity().y))
-		{
-			var a = self.body.GetAngularVelocity();
-			var b = self.body.GetAngle();
-			var c = self.body.GetLinearVelocity().x;
-			var d = self.body.GetLinearVelocity().y;
-			var e = 0;
-		}
+		var thrustNormR = Math.sqrt(self.thrustR.x * self.thrustR.x + self.thrustR.y * self.thrustR.y);
+		var thrustNormL = Math.sqrt(self.thrustL.x * self.thrustL.x + self.thrustL.y * self.thrustL.y);
+		self.thrustDirR = new b2Vec2(self.thrustR.x / thrustNormR, self.thrustR.y / thrustNormR);
+		self.thrustDirL = new b2Vec2(self.thrustL.x / thrustNormL, self.thrustL.y / thrustNormL);
+		r = Math.min(Math.round(50 + Math.max((Math.abs(self.thrustR.x) + Math.abs(self.thrustR.y)) * 30000, 0)), 255);
+		g = r;
+		b = 5;
+		self.thrustColorR = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+		r = Math.min(Math.round(50 + Math.max((Math.abs(self.thrustL.x) + Math.abs(self.thrustL.y)) * 30000, 0)), 255);
+		g = r;
+		b = 5;
+		self.thrustColorL = 'rgb(' + r + ', ' + g + ', ' + b + ')';
 		
 		self.eye.update(self.body.GetWorldCenter(), self.dir);
 		var fraction = self.eye.raycast.fraction ? self.eye.raycast.fraction : 1;
@@ -105,20 +109,44 @@ function Organism(id)
 	}
 	self.draw = function()
 	{
+		if (self.id == 39)
+		{
+			var a = 0;
+		}
+	
 		//Body.
 		ctx.fillStyle = self.color;
 		ctx.beginPath();
 		ctx.arc(self.x, self.y, self.r, 0, 2 * Math.PI);
 		ctx.fill();
+		ctx.strokeStyle = "2e3a4e";
+		ctx.beginPath();
+		ctx.arc(self.x, self.y, self.r, 0, 2 * Math.PI);
+		ctx.stroke();
 		
 		//Thrusters.
-		ctx.fillStyle = self.thrustColor;
+		ctx.fillStyle = self.healthColor;
 		ctx.beginPath();
-		ctx.arc(self.thrustPosR.x, self.thrustPosR.y, self.r * .1, 0, 2 * Math.PI);
+		ctx.arc(self.thrustPosR.x, self.thrustPosR.y, self.r * .12, 0, 2 * Math.PI);
 		ctx.fill();
 		ctx.beginPath();
-		ctx.arc(self.thrustPosL.x, self.thrustPosL.y, self.r * .1, 0, 2 * Math.PI);
+		ctx.arc(self.thrustPosL.x, self.thrustPosL.y, self.r * .12, 0, 2 * Math.PI);
 		ctx.fill();
+		
+		//Thruster power.
+		ctx.fillStyle = self.thrustColorR;
+		ctx.beginPath();
+		ctx.arc(self.thrustPosR.x + self.thrustDirR.x * self.r * .3, self.thrustPosR.y + self.thrustDirR.y * self.r * .3, self.r * .1, 0, 2 * Math.PI);
+		ctx.fill();
+		ctx.fillStyle = self.thrustColorL;
+		ctx.beginPath();
+		ctx.arc(self.thrustPosL.x + self.thrustDirL.x * self.r * .3, self.thrustPosL.y + self.thrustDirL.y * self.r * .3, self.r * .1, 0, 2 * Math.PI);
+		ctx.fill();
+		
+		if (self.id == 39)
+		{
+			var a = 0;
+		}
 		
 		//Eye.
 		self.eye.draw();
@@ -139,11 +167,6 @@ function Organism(id)
 			self.body.ApplyForce(self.thrustL, new b2Vec2(self.thrustPosL.x / PixelsPerMeter, self.thrustPosL.y / PixelsPerMeter));
 			var thrustE = 25 * (Math.abs(self.thrustR.x) + Math.abs(self.thrustR.y) + Math.abs(self.thrustL.x) + Math.abs(self.thrustL.y)) / 4;
 			var rotE = Math.abs(self.body.GetAngularVelocity()) / 100;
-			if (isNaN(thrustE) || isNaN(rotE) || isNaN(self.body.GetLinearVelocity().x) ||
-				isNaN(self.body.GetLinearVelocity().y))
-			{
-				var a = 0;
-			}
 			self.energy = Math.max(self.energy - thrustE - rotE, 0);
 		}
 	}

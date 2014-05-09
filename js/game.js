@@ -111,8 +111,7 @@ function setup()
 function gameLoop()
 {
 	//Clear the canvas.
-	ctx.fillStyle = "#FFF";
-	ctx.fillRect(0,0,1400,800);
+	ctx.clearRect(0, 0, 1400, 800);
 	
 	//Alter the graviy.
 	/*if (tick >= 0 && tick < 100) { world.SetGravity(new b2Vec2(0, .1)); }
@@ -124,6 +123,12 @@ function gameLoop()
 	var iteration = 1;
 	world.Step(timeStep, iteration);
 	world.ClearForces();
+
+	//Draw the left wall.
+	ctx.strokeStyle = "#000";
+	ctx.moveTo(170,0);
+	ctx.lineTo(170,800);
+	ctx.stroke();
 	
 	//Update and draw all items.
 	for (var i = 0; i < items.length; i++)
@@ -162,7 +167,7 @@ function gameLoop()
 	}
 	tick++;*/
 	
-	world.DrawDebugData();
+	//world.DrawDebugData();
 	
 	//Draw debug text.
 	var now = new Date().getTime();
