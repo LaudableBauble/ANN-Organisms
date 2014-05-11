@@ -62,8 +62,9 @@ function Organism(id)
 		
 		self.body.SetUserData(self);
 		
-		//The eye.
-		self.eye = new Eye(self.r * 5 / PixelsPerMeter);
+		//The eyes.
+		self.eyeFront = new Eye(self.r * 5 / PixelsPerMeter);
+		self.eyeBack = new Eye(self.r * 2 / PixelsPerMeter);
 		
 		//The brain.
 		getRandomizedBrain(self);
@@ -88,32 +89,31 @@ function Organism(id)
 		var thrustNormL = Math.sqrt(self.thrustL.x * self.thrustL.x + self.thrustL.y * self.thrustL.y);
 		self.thrustDirR = new b2Vec2(self.thrustR.x / thrustNormR, self.thrustR.y / thrustNormR);
 		self.thrustDirL = new b2Vec2(self.thrustL.x / thrustNormL, self.thrustL.y / thrustNormL);
-		r = Math.min(Math.round(50 + Math.max((Math.abs(self.thrustR.x) + Math.abs(self.thrustR.y)) * 30000, 0)), 255);
+		r = Math.min(Math.round(80 + Math.max((Math.abs(self.thrustR.x) + Math.abs(self.thrustR.y)) * 30000, 0)), 255);
 		g = r;
 		b = 5;
 		self.thrustColorR = 'rgb(' + r + ', ' + g + ', ' + b + ')';
-		r = Math.min(Math.round(50 + Math.max((Math.abs(self.thrustL.x) + Math.abs(self.thrustL.y)) * 30000, 0)), 255);
+		r = Math.min(Math.round(80 + Math.max((Math.abs(self.thrustL.x) + Math.abs(self.thrustL.y)) * 30000, 0)), 255);
 		g = r;
 		b = 5;
 		self.thrustColorL = 'rgb(' + r + ', ' + g + ', ' + b + ')';
 		
-		self.eye.update(self.body.GetWorldCenter(), self.dir);
-		var fraction = self.eye.raycast.fraction ? self.eye.raycast.fraction : 1;
-		self.brain.inputNodes[0].recieveSignal(fraction, "sight");
-		self.brain.inputNodes[1].recieveSignal(self.energy, "energy");
-		self.brain.inputNodes[2].recieveSignal(self.body.GetAngularVelocity(), "rotVel");
-		self.brain.inputNodes[3].recieveSignal(self.body.GetAngle() / 1000, "dir");
-		self.brain.inputNodes[4].recieveSignal(self.body.GetLinearVelocity().x, "linVelX");
-		self.brain.inputNodes[5].recieveSignal(self.body.GetLinearVelocity().y, "linVelY");
+		self.eyeFront.update(self.body.GetWorldCenter(), self.dir);
+		self.eyeBack.update(self.body.GetWorldCenter(), new b2Vec2(self.dir.x * -1, self.dir.y * -1));
+		var fractionF = self.eyeFront.raycast.fraction ? self.eyeFront.raycast.fraction : 1;
+		var fractionB = self.eyeBack.raycast.fraction ? self.eyeBack.raycast.fraction : 1;
+		
+		self.brain.inputNodes[0].recieveSignal(fractionF, "sightF");
+		self.brain.inputNodes[1].recieveSignal(fractionB, "sightB");
+		self.brain.inputNodes[2].recieveSignal(self.energy, "energy");
+		self.brain.inputNodes[3].recieveSignal(self.body.GetAngularVelocity(), "rotVel");
+		self.brain.inputNodes[4].recieveSignal(self.body.GetAngle() / 1000, "dir");
+		self.brain.inputNodes[5].recieveSignal(self.body.GetLinearVelocity().x, "linVelX");
+		self.brain.inputNodes[6].recieveSignal(self.body.GetLinearVelocity().y, "linVelY");
 		self.brain.update();
 	}
 	self.draw = function()
-	{
-		if (self.id == 39)
-		{
-			var a = 0;
-		}
-	
+	{	
 		//Body.
 		ctx.fillStyle = self.color;
 		ctx.beginPath();
@@ -136,20 +136,16 @@ function Organism(id)
 		//Thruster power.
 		ctx.fillStyle = self.thrustColorR;
 		ctx.beginPath();
-		ctx.arc(self.thrustPosR.x + self.thrustDirR.x * self.r * .3, self.thrustPosR.y + self.thrustDirR.y * self.r * .3, self.r * .1, 0, 2 * Math.PI);
+		ctx.arc(self.thrustPosR.x + self.thrustDirR.x * self.r * .3 * -1, self.thrustPosR.y + self.thrustDirR.y * self.r * .3 * -1, self.r * .1, 0, 2 * Math.PI);
 		ctx.fill();
 		ctx.fillStyle = self.thrustColorL;
 		ctx.beginPath();
-		ctx.arc(self.thrustPosL.x + self.thrustDirL.x * self.r * .3, self.thrustPosL.y + self.thrustDirL.y * self.r * .3, self.r * .1, 0, 2 * Math.PI);
+		ctx.arc(self.thrustPosL.x + self.thrustDirL.x * self.r * .3 * -1, self.thrustPosL.y + self.thrustDirL.y * self.r * .3 * -1, self.r * .1, 0, 2 * Math.PI);
 		ctx.fill();
 		
-		if (self.id == 39)
-		{
-			var a = 0;
-		}
-		
-		//Eye.
-		self.eye.draw();
+		//Eyes.
+		self.eyeFront.draw();
+		self.eyeBack.draw();
 		
 		//Draw debug text.
 		ctx.font = "8px Arial";
@@ -172,12 +168,10 @@ function Organism(id)
 	}
 	self.setRightThrust = function(value)
 	{
-		value /= 10;
 		self.thrustR = new b2Vec2(self.dir.x * value, self.dir.y * value);
 	}
 	self.setLeftThrust = function(value)
 	{
-		value /= 10;
 		self.thrustL = new b2Vec2(self.dir.x * value, self.dir.y * value);
 	}
 	self.clone = function()
@@ -239,21 +233,21 @@ function Eye(length)
 		
 		//Full sight line.
 		ctx.beginPath();
-		ctx.strokeStyle = "#458B00";
+		ctx.strokeStyle = 'rgba(69, 139, 0, .3)';
 		ctx.moveTo(x, y);
 		ctx.lineTo(self.target.x * PixelsPerMeter, self.target.y * PixelsPerMeter);
 		ctx.stroke();
 		
 		//Free sight line.
 		ctx.beginPath();
-		ctx.strokeStyle = "#FF0000";
+		ctx.strokeStyle = 'rgba(255, 0, 0, .4)';
 		ctx.moveTo(x, y);
 		ctx.lineTo(self.sight.x + self.dir.x * 2, self.sight.y + self.dir.y * 2);
 		ctx.stroke();
 		
 		//Sight area.
-		ctx.fillStyle = "#FF0000";
 		ctx.beginPath();
+		ctx.fillStyle = 'rgba(255, 0, 0, .6)';
 		ctx.arc(self.sight.x + self.dir.x * 2 - 1 * self.dir.x, self.sight.y + self.dir.y * 2 - 1 * self.dir.y, 2, 0, 2 * Math.PI);
 		ctx.fill();
 	}
